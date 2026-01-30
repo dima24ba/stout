@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOUT Calc v132.0 (Fixed Logic)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2563EB; --primary-light: #EFF6FF; --bg: #F3F4F6; --surface: #FFFFFF; --text-main: #111827; --text-sec: #6B7280; --border: #E5E7EB; --radius: 16px; --warn-bg: #FEF2F2; --warn-text: #991B1B; --warn-border: #FCA5A5; }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 40px 20px; font-size: 14px; line-height: 1.5; }
+        .container { display: flex; gap: 30px; max-width: 1400px; margin: 0 auto; align-items: flex-start; }
+        .input-panel { flex: 0 0 380px; background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: sticky; top: 20px; max-height: 95vh; overflow-y: auto; }
+        h2 { font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.02em; }
+        h3 { font-size: 11px; font-weight: 700; color: var(--text-sec); text-transform: uppercase; margin: 25px 0 12px 0; border-top: 1px solid var(--border); padding-top: 20px; letter-spacing: 0.05em; }
+        .control-item { margin-bottom: 20px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .lbl { font-weight: 600; font-size: 14px; color: var(--text-main); }
+        .lbl-sub { font-size: 12px; color: var(--text-sec); margin-bottom: 8px; font-weight: 500; display: block; }
+        .val { font-weight: 700; color: var(--primary); }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: var(--primary); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .control-card { background: #F9FAFB; border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
+        .stepper { display: flex; align-items: center; background: #fff; border: 1px solid #D1D5DB; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .step-btn { width: 32px; height: 32px; border: none; background: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-sec); transition: 0.2s; }
+        .step-btn:hover { background: #F3F4F6; color: var(--primary); }
+        .step-val { width: 30px; text-align: center; font-weight: 700; font-size: 14px; }
+        .switch { position: relative; display: inline-block; width: 52px; height: 28px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E7EB; transition: .3s; border-radius: 34px; border: 1px solid transparent; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .tabs { display: flex; background: #F9FAFB; padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
+        .tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 13px; font-weight: 500; color: var(--text-sec); cursor: pointer; border-radius: 7px; transition: all 0.2s ease; }
+        .tab:hover { color: var(--text-main); }
+        .tab.active { background: #fff; color: var(--primary); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .tab.multi-active { background: var(--primary); color: #fff; font-weight: 700; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .info-card { background: var(--primary-light); border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid #DBEAFE; }
+        .output-panel { flex: 1; min-width: 0; width: 100%; background: var(--surface); padding: 50px; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: auto; }
+        .doc-header { margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .doc-title { font-size: 32px; font-weight: 800; text-transform: uppercase; line-height: 1; }
+        .doc-summary { font-size: 12px; color: var(--text-main); font-weight: 500; background: #F9FAFB; padding: 14px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .doc-summary b { color: var(--primary); font-weight: 700; }
+        .sep { color: #D1D5DB; }
+        .sku-control { display: flex; align-items: center; gap: 10px; }
+        .sku-label { font-size: 11px; font-weight: 700; color: var(--text-sec); text-transform: uppercase; }
+        .inv-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .inv-table th { text-align: left; padding: 12px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-sec); border-bottom: 1px solid #000; }
+        .inv-table td { padding: 10px; border-bottom: 1px solid #F3F4F6; vertical-align: middle; }
+        .col-img { width: 60px; text-align: center; }
+        .prod-thumb { width: 50px; height: 50px; object-fit: contain; border-radius: 6px; background: #fff; padding: 2px; border: 1px solid #eee; }
+        .col-idx { width: 30px; color: #9CA3AF; text-align: center; }
+        .col-name { font-weight: 600; color: var(--text-main); font-size: 13px; }
+        .col-sku { width: 120px; white-space: nowrap; font-family: monospace; color: var(--text-sec); }
+        .hidden-col { display: none; }
+        .row-sec td { background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 12px; text-transform: uppercase; padding: 12px 10px; border-top: 2px solid #fff; }
+        .row-subtotal td { text-align: right; font-style: italic; color: var(--text-sec); padding-bottom: 15px; }
+        .doc-footer { margin-top: auto; padding-top: 30px; border-top: 2px solid #000; display: flex; justify-content: flex-end; align-items: baseline; gap: 20px; }
+        .total-val { font-size: 32px; font-weight: 800; color: #111; }
+        .btn-print { background: #111; color: #fff; border: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; cursor: pointer; float: right; margin-top: 25px; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: var(--primary); }
+        .qty-wrap { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .tooltip-container { display: inline-flex; align-items: center; position: relative; cursor: help; vertical-align: middle; margin-left: 5px; }
+        .tooltip-icon { font-weight: bold; background: var(--primary); color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .tooltip-icon.tiny { width: 14px; height: 14px; font-size: 9px; background: #DBEAFE; color: var(--primary); border: 1px solid var(--primary); }
+        .tooltip-container:hover .tooltip-icon.tiny { background: var(--primary); color: #fff; }
+        .tooltip-text { visibility: hidden; width: 220px; background-color: #1F2937; color: #fff; text-align: left; border-radius: 8px; padding: 12px; position: absolute; z-index: 100; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 11px; line-height: 1.4; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); pointer-events: none; }
+        .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1F2937 transparent transparent transparent; }
+        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .warn-box { display: inline-block; margin-left: 15px; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: normal; vertical-align: middle; }
+        @media print { .input-panel, .btn-print, .sku-control { display: none !important; } .output-panel { box-shadow: none; width: 100%; } }
+    </style>
+    <script>
+    const REGION_DESC = { 130: "Зима до -35°C", 120: "Зима до -30°C", 100: "Зима до -25°C", 60: "Зима до -10°C" };
+    const WALL_DESC = { 0.8: "Тёплый (Газобетон)", 1.0: "Стандарт (Кирпич)", 1.3: "Холодный (Брус)" };
+
+    const getImg = (item) => {
+        if(!item || !item.name) return '';
+        let txt = item.brand==='STOUT'?'S':'B'; let bg='F3F4F6';
+        if(item.type==='el') {txt='⚡';bg='FEF3C7';} else if(item.type==='gas') {txt='🔥';bg='FEE2E2';}
+        else if(item.name.includes('Радиатор')) {txt='☢️';bg='E0F2FE';} 
+        else if(item.name.includes('Труба')) {txt='➰';bg='DCFCE7';}
+        else if(item.name.includes('Коллектор')) {txt='🎛️';bg='F3E8FF';} 
+        else if(item.name.includes('смесительный')) {txt='🔄';bg='F3E8FF';}
+        else if(item.name.includes('Бойлер')) {txt='💧';bg='DBEAFE';}
+        else if(item.name.includes('Warme')) {txt='🧪';bg='D1FAE5';}
+        else if(item.name.includes('Бак')) {txt='🔴';bg='FEE2E2';}
+        else if(item.name.includes('Стабилизатор')) {txt='🔌';bg='FEF3C7';}
+        else if(item.name.includes('Мат')) {txt='🔲';bg='F3E8FF';}
+        return `<img src="img/${item.id}.jpg" class="prod-thumb" onerror="this.onerror=null;this.src='https://placehold.co/100x100/${bg}/555?text=${txt}&font=roboto';">`;
+    };
+
+    const catalog = {
+        boilers: [
+            {id:"SEB-2201-000005", name:"Котел электрический PLUS (5 кВт)", power:5, price:84623, type:"el"},
+            {id:"SEB-2201-000009", name:"Котел электрический PLUS (9 кВт)", power:9, price:88163, type:"el"},
+            {id:"SEB-2201-000012", name:"Котел электрический PLUS (12 кВт)", power:12, price:89509, type:"el"},
+            {id:"SEB-2201-000014", name:"Котел электрический PLUS (14 кВт)", power:14, price:93129, type:"el"},
+            {id:"SEB-2201-000018", name:"Котел электрический PLUS (18 кВт)", power:18, price:99132, type:"el"},
+            {id:"SEB-2201-000021", name:"Котел электрический PLUS (21 кВт)", power:21, price:101614, type:"el"},
+            {id:"SEB-2201-000024", name:"Котел электрический PLUS (24 кВт)", power:24, price:103891, type:"el"},
+            {id:"SEB-2201-000027", name:"Котел электрический PLUS (27 кВт)", power:27, price:106374, type:"el"},
+            {id:"100022963", name:"Котел газовый ECO Nova 1.24F (24 кВт)", power:24, price:88255, type:"gas", brand:"BAXI"},
+            {id:"100023035", name:"Котел газовый ECO Nova 1.31F (31 кВт)", power:31, price:119985, type:"gas", brand:"BAXI"}
+        ],
+        chimneys: [{id:"SCA-6010-210850", name:"Дымоход коаксиальный 60/100", price:6694, brand:"STOUT"}],
+        stabs: [
+            {id:"SST-0001-000250", name:"Стабилизатор ST 250", price:6905, type:"gas"}, 
+            {id:"SST-0001-000600", name:"Стабилизатор ST 600", price:9578, type:"el"}, 
+            {id:"SST-0001-000900", name:"Стабилизатор ST 900", price:10322, type:"el"}
+        ],
+        valves: [{id:"SFB-0001-000001", name:"Комплект 3-х ход. клапана Fugas", price:12916, brand:"STOUT"}],
+        tanks: [ {id:"SWH-3110-000100", name:"Бойлер напольный 100л", vol:100, price:76047}, {id:"SWH-2110-000150", name:"Бойлер напольный OptiBase 150л", vol:150, price:74877}, {id:"SWH-2110-000200", name:"Бойлер напольный OptiBase 200л", vol:200, price:83696}, {id:"SWH-2110-000300", name:"Бойлер напольный OptiBase 300л", vol:300, price:129213} ],
+        exp_dhw: [ {id:"STW-0015-000012", name:"Расширительный бак для ГВС 12л", vol:12, price:3603}, {id:"STW-0015-000018", name:"Расширительный бак для ГВС 18л", vol:18, price:4145}, {id:"STW-0015-000024", name:"Расширительный бак для ГВС 24л", vol:24, price:4600} ],
+        exp_heating: [ {id:"STH-0004-000018", name:"Расширительный бак для отопления 18л", vol:18, price:3621}, {id:"STH-0006-000024", name:"Расширительный бак для отопления 24л", vol:24, price:3812}, {id:"STH-0006-000050", name:"Расширительный бак для отопления 50л", vol:50, price:8454}, {id:"STH-0006-000080", name:"Расширительный бак для отопления 80л", vol:80, price:13545}, {id:"STH-0006-000100", name:"Расширительный бак для отопления 100л", vol:100, price:15802} ],
+        tank_mount: {id:"SAC-0030-000825", name:"Крепление для бака", price:1265},
+        // Добавлено свойство brand: "ROMMER"
+        tank_kit: {id:"RVS-0008-002020", name:"Комплект подключения мембранного бака", price:1330, brand:"ROMMER"},
+        rads: [
+            {id:"SRB-0320-050004", name:"Радиатор 4 сек", sec:4, price:9618}, {id:"SRB-0320-050005", name:"Радиатор 5 сек", sec:5, price:11236}, {id:"SRB-0320-050006", name:"Радиатор 6 сек", sec:6, price:12855},
+            {id:"SRB-0320-050007", name:"Радиатор 7 сек", sec:7, price:14473}, {id:"SRB-0320-050008", name:"Радиатор 8 сек", sec:8, price:16091}, {id:"SRB-0320-050009", name:"Радиатор 9 сек", sec:9, price:17709},
+            {id:"SRB-0320-050010", name:"Радиатор 10 сек", sec:10, price:19327}, {id:"SRB-0320-050011", name:"Радиатор 11 сек", sec:11, price:20945}, {id:"SRB-0320-050012", name:"Радиатор 12 сек", sec:12, price:22564},
+            {id:"SRB-0320-050013", name:"Радиатор 13 сек", sec:13, price:24182}, {id:"SRB-0320-050014", name:"Радиатор 14 сек", sec:14, price:25800}
+        ],
+        rad_kits: [ {id:"SHT-0001-003015", name:"Термоголовка", price:1573}, {id:"SVH-0004-000020", name:"Узел нижн. подкл.", price:2267}, {id:"SFT-0049-000002", name:"Ниппель", price:374} ],
+        manifolds_rad: [
+            {id:"SMS-0922-000002", loops:2, price:9139, name:"Коллектор радиаторный 2 вых."},
+            {id:"SMS-0922-000003", loops:3, price:11331, name:"Коллектор радиаторный 3 вых."},
+            {id:"SMS-0922-000004", loops:4, price:13535, name:"Коллектор радиаторный 4 вых."},
+            {id:"SMS-0922-000005", loops:5, price:16043, name:"Коллектор радиаторный 5 вых."},
+            {id:"SMS-0922-000006", loops:6, price:18382, name:"Коллектор радиаторный 6 вых."},
+            {id:"SMS-0922-000007", loops:7, price:21273, name:"Коллектор радиаторный 7 вых."},
+            {id:"SMS-0922-000008", loops:8, price:23895, name:"Коллектор радиаторный 8 вых."},
+            {id:"SMS-0922-000009", loops:9, price:26187, name:"Коллектор радиаторный 9 вых."},
+            {id:"SMS-0922-000010", loops:10, price:28771, name:"Коллектор радиаторный 10 вых."},
+            {id:"SMS-0922-000011", loops:11, price:31040, name:"Коллектор радиаторный 11 вых."},
+            {id:"SMS-0922-000012", loops:12, price:33275, name:"Коллектор радиаторный 12 вых."},
+            {id:"SMS-0922-000013", loops:13, price:37319, name:"Коллектор радиаторный 13 вых."}
+        ],
+        pipes: [ {id:"SPX-0002-101620", name:"Труба 16x2.0 (100 м)", len:100, price:17054}, {id:"SPX-0002-501620", name:"Труба 16x2.0 (500 м)", len:500, price:85270} ],
+        insulated_pipes: [ {id:"SPI-0003-001622", name:"Труба 16x2.2 (кр)", len:100, price:25500}, {id:"SPI-0004-001622", name:"Труба 16x2.2 (син)", len:100, price:25500} ],
+        manifolds: [
+            {id:"SMS-0917-000002", loops:2, price:8100}, {id:"SMS-0917-000003", loops:3, price:10138}, {id:"SMS-0917-000004", loops:4, price:12813}, {id:"SMS-0917-000005", loops:5, price:15512},
+            {id:"SMS-0917-000006", loops:6, price:18571}, {id:"SMS-0917-000007", loops:7, price:21278}, {id:"SMS-0917-000008", loops:8, price:24905}, {id:"SMS-0917-000009", loops:9, price:28070},
+            {id:"SMS-0917-000010", loops:10, price:30935}, {id:"SMS-0917-000011", loops:11, price:34052}, {id:"SMS-0917-000012", loops:12, price:36903}
+        ],
+        parts: [ {id:"SMS-1000-010001", name:"Концевой фитинг", price:2919}, {id:"SFC-0020-001622", name:"Евроконус", price:405}, {id:"SFA-0029-000016", name:"Фиксатор 90", price:127} ],
+        mixing_units: [ {id:"SDG-0120-001000", name:"НСУ (без насоса)", price:30710} ],
+        groups_dn20: [ {id:"SDG-0001-002001", name:"Группа насосная DN20 (Прямая)", price:19421}, {id:"SDG-0002-002001", name:"Группа насосная DN20 (Смес.)", price:35378} ],
+        groups_dn25: [ {id:"SDG-0001-002501", name:"Группа насосная DN25 (Прямая)", price:20966}, {id:"SDG-0002-002501", name:"Группа насосная DN25 (Смес.)", price:38192} ],
+        hydro_dn20: [ {id:"SDG-0018-002502", name:"Коллектор-гидрострелка DN20 (2 конт)", price:59789}, {id:"SDG-0018-002503", name:"Коллектор-гидрострелка DN20 (3 конт)", price:72000} ],
+        hydro_dn25: [ {id:"SDG-0018-004002", name:"Коллектор-гидрострелка DN25 (2 конт)", price:67944}, {id:"SDG-0018-004003", name:"Коллектор-гидрострелка DN25 (3 конт)", price:85000} ],
+        pumps: [ {id:"RCP-0002-1560130", brand:"ROMMER", name:"Насос 15/60", price:3562}, {id:"SPC-0011-2560180", brand:"STOUT", name:"Насос 25/60 (180мм)", price:13952}, {id:"SPC-0011-2560130", brand:"STOUT", name:"Насос 25/60 (130мм)", price:15144} ],
+        mats: [ {id:"SMF-0001-110802", name:"Мат с бобышками", area:0.88, price:1102, brand:"STOUT"} ],
+        // Фитинги
+        american_34: {id:"SFT-0041-000034", name:"Разъемное соед. американка ВН 3/4\"", price:714},
+        // Добавляем кран шаровой
+        ball_valve_34: {id:"SVB-0004-000020", name:"Кран шаровой ВР/НР, 3/4\"", price:1226},
+        // Добавляем обратный клапан
+        check_valve_34: {id:"SVC-0011-000020", name:"Клапан обратный пружинный 3/4\"", price:1729},
+        // Добавляем фильтр-шламоотделитель
+        filter_mag: {id:"SFW-0072-000020", name:"Фильтр-шламоотделитель магнитный 3/4\"", price:9231},
+        // Добавляем ниппель 3/4
+        nipple_34: {id:"SFT-0003-003434", name:"Ниппель НН 3/4\"", price:239},
+        coolants: [ {id:"WARME-HYDRO-20", brand:"WARME", name:"Hydro, 20л", vol:20, price:950, type:"water"}, {id:"WARME-ECO30-20", brand:"WARME", name:"Eco 30, 20кг", vol:19, price:3785, type:"eco30"}, {id:"WARME-PRO65-20", brand:"WARME", name:"Eco Pro 65, 20кг", vol:18, price:5184, type:"pro65"} ]
+    };
+
+    const app = {
+        state: { area:150, floors:1, region:130, mat:1.0, fuels:['el'], systems:['rad'], hotWater:false, res:3, win:4, tp1:0, tp2:0, showSku:false, coolant:'water' },
+        init: function() { this.syncUI(); this.render(); },
+        syncUI: function() {
+            document.getElementById('inp_area').value = this.state.area;
+            document.getElementById('val_area').innerText = this.state.area;
+            document.getElementById('val_win').innerText = this.state.win;
+            document.getElementById('chk_floors').checked = (this.state.floors===2);
+            document.getElementById('div_tp2').style.display = (this.state.floors===2)?'block':'none';
+            
+            // Fuel Logic (Radio)
+            document.getElementById('fuel_el').className = this.state.fuels.includes('el') ? 'tab multi-active' : 'tab';
+            document.getElementById('fuel_gas').className = this.state.fuels.includes('gas') ? 'tab multi-active' : 'tab';
+            
+            // System Logic (Show TP slider)
+            const hasTp = this.state.systems.includes('tp');
+            document.getElementById('sys_rad').className = this.state.systems.includes('rad') ? 'tab multi-active' : 'tab';
+            document.getElementById('sys_tp').className = hasTp ? 'tab multi-active' : 'tab';
+            document.getElementById('blk_tp_sliders').style.display = hasTp ? 'block' : 'none';
+
+            document.getElementById('chk_hw').checked = this.state.hotWater;
+            document.getElementById('blk_res').style.display = this.state.hotWater?'flex':'none';
+            document.getElementById('val_res').innerText = this.state.res;
+            
+            const regTabs = document.getElementById('reg_tabs').children;
+            for(let t of regTabs) t.classList.remove('active');
+            if(this.state.region===130) regTabs[0].classList.add('active');
+            if(this.state.region===120) regTabs[1].classList.add('active');
+            if(this.state.region===100) regTabs[2].classList.add('active');
+            if(this.state.region===60) regTabs[3].classList.add('active');
+            
+            const matTabs = document.getElementById('mat_tabs').children;
+            for(let t of matTabs) t.classList.remove('active');
+            if(this.state.mat===1.3) matTabs[0].classList.add('active');
+            if(this.state.mat===1.0) matTabs[1].classList.add('active');
+            if(this.state.mat===0.8) matTabs[2].classList.add('active');
+            
+            const cTabs = document.querySelectorAll('.cool-tab');
+            cTabs.forEach(t => { t.classList.remove('active'); if(t.dataset.type === this.state.coolant) t.classList.add('active'); });
+            
+            document.getElementById('inp_tp1').max = this.state.area;
+            document.getElementById('inp_tp2').max = this.state.area;
+            document.getElementById('inp_tp1').value = this.state.tp1; document.getElementById('val_tp1').innerText = this.state.tp1;
+            document.getElementById('inp_tp2').value = this.state.tp2; document.getElementById('val_tp2').innerText = this.state.tp2;
+            document.getElementById('chk_sku').checked = this.state.showSku;
+            this.updateInfo();
+        },
+        setArea: function(v) { v=parseInt(v); this.state.area=v; if(this.state.tp1>v)this.state.tp1=v; if(this.state.tp1+this.state.tp2>v)this.state.tp2=v-this.state.tp1; this.syncUI(); this.render(); },
+        updWin: function(d) { let n=this.state.win+d; if(n<1)n=1; this.state.win=n; this.syncUI(); this.render(); },
+        toggleFloors: function(chk) { this.state.floors=chk?2:1; if(!chk)this.state.tp2=0; this.syncUI(); this.render(); },
+        setRegion: function(v) { this.state.region=v; this.syncUI(); this.render(); },
+        setMat: function(v) { this.state.mat=v; this.syncUI(); this.render(); },
+        updateInfo: function() { document.getElementById('desc_reg').innerHTML = `<span>📍</span> ${REGION_DESC[this.state.region]}`; document.getElementById('desc_mat').innerHTML = `<span>🧱</span> ${WALL_DESC[this.state.mat]}`; },
+        toggleFuel: function(f) { 
+    let idx = this.state.fuels.indexOf(f); 
+    if (idx > -1) { 
+        // Если уже есть - удаляем, но только если это не последний элемент
+        if (this.state.fuels.length > 1) this.state.fuels.splice(idx, 1); 
+    } else {
+        // Если нет - добавляем
+        this.state.fuels.push(f); 
+    }
+    this.syncUI(); 
+    this.render(); 
+},
+        toggleSys: function(s) { let i=this.state.systems.indexOf(s); if(i>-1){ if(this.state.systems.length>1) this.state.systems.splice(i,1); } else this.state.systems.push(s); this.syncUI(); this.render(); },
+        toggleHW: function(chk) { this.state.hotWater=chk; this.syncUI(); this.render(); },
+        updRes: function(d) { let n=this.state.res+d; if(n<1)n=1; if(n>10)n=10; this.state.res=n; this.syncUI(); this.render(); },
+        updTp: function(f, v) { 
+            v = parseInt(v); 
+            let max = this.state.area;
+            
+            if (f === 1) { 
+                if (v > max) v = max; 
+                this.state.tp1 = v;
+                // Если сумма больше площади дома, уменьшаем 2 этаж
+                if (this.state.tp1 + this.state.tp2 > max) {
+                    this.state.tp2 = max - this.state.tp1;
+                }
+            } else { 
+                if (v > max) v = max;
+                this.state.tp2 = v;
+                // Если сумма больше площади дома, уменьшаем 1 этаж
+                if (this.state.tp1 + this.state.tp2 > max) {
+                    this.state.tp1 = max - this.state.tp2;
+                }
+            } 
+            this.syncUI(); 
+            this.render(); 
+        },
+        setCoolant: function(t) { this.state.coolant=t; this.syncUI(); this.render(); },
+        toggleSku: function() { this.state.showSku=document.getElementById('chk_sku').checked; this.render(); },
+        render: function() {
+            // 1. Базовые расчеты
+            let pwr = (this.state.area * this.state.region * this.state.mat / 1000).toFixed(1);
+            
+            // Названия регионов
+            let regionName = "Сибирь"; 
+            if(this.state.region===120) regionName="Урал"; 
+            if(this.state.region===100) regionName="Центр"; 
+            if(this.state.region===60) regionName="Юг";
+            
+            let dateStr = new Date().toLocaleDateString();
+            
+            // Обновляем шапку
+            document.getElementById('doc_summary').innerHTML = `
+                <span>Объект: <b>${this.state.area} м²</b> (${this.state.floors===2?2:1} эт)</span> <span class="sep">•</span> 
+                <span>Теплопотери: <b>${pwr} кВт</b></span> <span class="sep">•</span> 
+                <span>Регион: <b>${regionName}</b></span> <span class="sep">•</span> 
+                <span>Проживающих: <b>${this.state.res}</b></span> <span class="sep">•</span> 
+                <span>Дата: <b>${dateStr}</b></span>
+            `;
+
+            // Корзина
+            let bill = {}; 
+            const addToBill = (item, qty, tip) => {
+                if(!item || qty <= 0) return;
+                let key = item.id + (item.name||"");
+                if(!bill[key]) bill[key] = { ...item, q:0, sum:0, displaySku: item.id };
+                bill[key].q += qty;
+                bill[key].sum += item.price * qty;
+                
+                // ИСПРАВЛЕНО: Проверка на дубликаты текста подсказки
+                if(tip) {
+                    if (!bill[key].qtyTip) {
+                        // Если пусто, просто записываем
+                        bill[key].qtyTip = tip;
+                    } else if (!bill[key].qtyTip.includes(tip)) {
+                        // Добавляем только если такого текста еще НЕТ
+                        bill[key].qtyTip += ". " + tip;
+                    }
+                }
+            };
+
+            let h = "", sum = 0, idx = 1, showSku = document.getElementById('chk_sku').checked;
+
+            // Генератор HTML таблицы
+            const flushBill = (title, warn) => {
+                if(Object.keys(bill).length === 0) return;
+                let secTotal = 0, rows = "";
+                let titleHtml = title + (warn ? `<div class="warn-box">${warn}</div>` : "");
+                h += `<tr class="row-sec"><td colspan="9">${titleHtml}</td></tr>`;
+                
+                for(let k in bill) {
+                    let i = bill[k]; 
+                    secTotal += i.sum;
+                    
+                    // Формируем иконку "i" только если есть текст подсказки
+                    let tipHtml = i.qtyTip 
+                        ? `<div class="tooltip-container"><div class="tooltip-icon tiny">i</div><div class="tooltip-text">${i.qtyTip}</div></div>` 
+                        : "";
+                    
+                    let qHtml = `<div class="qty-wrap">${i.q}${tipHtml}</div>`;
+                    
+                    rows += `<tr>
+                        <td class="col-idx">${idx++}</td>
+                        <td class="col-img">${getImg(i)}</td>
+                        <td class="col-name">${i.name}</td>
+                        <td class="col-sku ${showSku?'':'hidden-col'}">${i.displaySku}</td>
+                        <td style="text-align:center">${i.brand||'STOUT'}</td>
+                        <td style="text-align:center">${i.unit||'шт'}</td>
+                        <td class="col-qty">${qHtml}</td>
+                        <td style="text-align:right">${i.price.toLocaleString()}</td>
+                        <td style="text-align:right;font-weight:700">${i.sum.toLocaleString()}</td>
+                    </tr>`;
+                }
+                h += rows + `<tr class="row-subtotal"><td colspan="9">Итого: ${secTotal.toLocaleString()} ₽</td></tr>`;
+                sum += secTotal; 
+                bill = {}; // Очищаем корзину для следующего раздела
+            };
+
+            // ==========================================
+            // РАЗДЕЛ 1: Источник тепла
+            // ==========================================
+            let selBoilers = [], boilerCnt = 0;
+            ['el','gas'].forEach(ft => {
+                if(this.state.fuels.includes(ft)) {
+                    let needed = parseFloat(pwr);
+                    let b = catalog.boilers.find(x=>x.type===ft && x.power>=needed);
+                    
+                    if(ft==='el') {
+                        if(!b && needed > 27) { 
+                            let half = needed/2;
+                            let b2 = catalog.boilers.find(x=>x.type==='el' && x.power>=half);
+                            if(b2) { 
+                                addToBill(b2, 2, `Каскад: Потребность ${needed}кВт разбита на 2 котла по ${b2.power}кВт`); 
+                                selBoilers.push(b2,b2); 
+                            }
+                        } else {
+                            let t = b || catalog.boilers[7]; // Максимальный если не нашли
+                            addToBill(t, 1, `Подобран под теплопотери: ${needed} кВт + запас`); 
+                            selBoilers.push(t);
+                        }
+                    } else if (ft==='gas') {
+                        if(needed > 31) { 
+                            let bg = catalog.boilers.find(x=>x.id==="100022963"); 
+                            addToBill(bg, 2, `Каскад: Потребность ${needed}кВт. 2 газовых котла`); 
+                            selBoilers.push(bg,bg);
+                        } else {
+                            let t = b || catalog.boilers.find(x=>x.id==="100022963"); 
+                            addToBill(t, 1, `Подобран под теплопотери: ${needed} кВт`); 
+                            selBoilers.push(t);
+                        }
+                    }
+                }
+            });
+            boilerCnt = selBoilers.length;
+            
+            // ВОЗВРАЩАЕМ ПОДБОР САМОГО БОЙЛЕРА
+            if(this.state.hotWater) {
+                let vol = this.state.res>=7?300 : this.state.res>=5?200 : this.state.res>=3?150 : 100;
+                let t = catalog.tanks.find(x=>x.vol===vol); 
+                addToBill(t, 1, `Расчет: ${this.state.res} жильцов × 50л`);
+            }
+            flushBill("1. ИСТОЧНИК ТЕПЛА");
+
+            // ==========================================
+            // РАЗДЕЛ 2: Обвязка и Гидравлика
+            // ==========================================
+            // 1. Дымоходы, стабилизаторы, АМЕРИКАНКИ, КРАНЫ и ОБРАТНЫЕ КЛАПАНЫ
+            selBoilers.forEach(b => {
+                if(b.type === 'gas') {
+                    addToBill(catalog.chimneys[0], 1, "Обязательно для турбо-котла"); 
+                    addToBill(catalog.stabs[0], 1, "Защита платы управления");
+                } else {
+                    addToBill(b.power<=18?catalog.stabs[1]:catalog.stabs[2], 1, `Для эл. котла ${b.power}кВт`);
+                }
+                
+                // 2 американки на каждый котел
+                addToBill(catalog.american_34, 2, "На подачу и обратку котла");
+
+                // 2 шаровых крана на каждый котел
+                addToBill(catalog.ball_valve_34, 2, "Отсекающие краны котла");
+
+                // Обратный клапан (только если котлов больше 1)
+                if (selBoilers.length > 1) {
+                    addToBill(catalog.check_valve_34, 1, "На подачу (защита от паразитной циркуляции в каскаде)");
+                }
+                // ДОБАВЛЕНО: Фильтр-шламоотделитель на каждый котел
+                addToBill(catalog.filter_mag, 1, "На обратку (защита теплообменника)");
+            });
+            
+            if(this.state.hotWater) { 
+                if(boilerCnt>0) addToBill(catalog.valves[0], boilerCnt, "Комплект подключения бойлера (Fugas)");
+                
+                // ДОБАВЛЕНО: 2 ниппеля на каждый клапан Fugas
+                addToBill(catalog.nipple_34, boilerCnt * 2, "Для подключения клапана Fugas");
+                
+                // Подбор расширительного бака ГВС
+                let exp = catalog.exp_dhw.find(x => x.vol >= (this.state.res>=7?300:100)*0.1) || catalog.exp_dhw[2]; 
+                addToBill(exp, 1, "10% от объема бойлера"); 
+                
+                // Добавляем крепление для бака
+                addToBill(catalog.tank_mount, 1, "Настенное крепление для бака");
+
+                // Комплект подключения ROMMER
+                addToBill(catalog.tank_kit, 1, "Комплект подключения бака ГВС (ROMMER)");
+            }
+
+            let hasRad = this.state.systems.includes('rad');
+            let hasTp = this.state.systems.includes('tp');
+            let radSecs = 0, radMeters = 0, tpMeters = 0;
+            let tpArea = this.state.tp1 + this.state.tp2;
+            
+            // Расчет радиаторов (предварительный для объема)
+            if(hasRad) {
+                // Если есть ТП, радиаторы берут 70% нагрузки, иначе 100%
+                let load = (hasTp && tpArea>0) ? pwr*1000*0.7 : pwr*1000;
+                radSecs = Math.ceil(load/117); // 117 Вт секция
+                if(radSecs>0) {
+                    let pipe = Math.ceil(this.state.win * (Math.sqrt(this.state.area/(this.state.floors===2?2:1))+3) * 1.1);
+                    radMeters = pipe*2;
+                }
+            }
+            tpMeters = hasTp ? tpArea*7 : 0;
+
+            // Логика маленького дома
+            let useEco = (!hasRad && hasTp && tpArea<=120);
+            let needGroup = true;
+            if (!hasTp && this.state.area<=150 && pwr<=20 && this.state.floors===1) needGroup = false;
+            if(hasRad && this.state.floors===2) needGroup = true; // 2 этажа всегда требуют гидрострелку для баланса
+            
+            // Расчет расширительного бака отопления
+            let grpCnt = 0; if(!useEco && (needGroup||hasTp)) grpCnt=1;
+            let vSys = (boilerCnt*12 + radSecs*0.25 + radMeters*0.11 + tpMeters*0.113 + grpCnt*5)*1.15; // +15% запас
+            let reqExp = vSys*0.12; // 12% от объема системы
+            let bltin = boilerCnt*(selBoilers[0]?.type==='gas'?8:12); // Встроенные баки
+            let def = reqExp - bltin;
+            
+            if(def>0) {
+                let et = catalog.exp_heating.find(t=>t.vol>=def) || catalog.exp_heating[4];
+                addToBill(et, 1, `Расчет: ${Math.round(reqExp)}л (всего) - ${bltin}л (в котле)`);
+                if(et.vol<=25) addToBill(catalog.tank_mount, 1);
+                // Добавляем комплект ROMMER и для бака отопления
+                addToBill(catalog.tank_kit, 1, "Комплект подключения мембранного бака");
+            }
+
+            // Гидрострелки и насосные группы
+            if(!useEco) {
+                let big = (pwr>30 || tpArea>120);
+                let dn25 = big; // Если дом большой, берем DN25
+                let hyd = null, rGrp = null, rQ = 0, tGrp = null, tQ = 0, pmp = null;
+                
+                if(hasRad && needGroup) { rQ = (this.state.floors===2)?2:1; }
+                if(hasTp) tQ=1;
+                
+                // Выбор гидрострелки
+                if(needGroup || hasTp) {
+                    let db = dn25 ? catalog.hydro_dn25 : catalog.hydro_dn20;
+                    hyd = db[(rQ+tQ)>2 ? 1 : 0]; // Если больше 2 контуров, берем большую гребенку
+                }
+                let grps = dn25 ? catalog.groups_dn25 : catalog.groups_dn20;
+                pmp = dn25 ? catalog.pumps[1] : catalog.pumps[0];
+                
+                if(hyd) addToBill(hyd, 1, `Распределяет потоки на ${rQ+tQ} контура(ов)`);
+                if(rQ>0) addToBill(grps[0], rQ, rQ===2 ? "По 1 прямой группе на каждый этаж" : "Прямая насосная группа для радиаторов");
+                if(tQ>0) addToBill(grps[1], tQ, "Смесительная группа для понижения t° теплого пола");
+                if(rQ+tQ>0) addToBill(pmp, rQ+tQ, "Циркуляционные насосы для групп");
+            }
+            flushBill("2. ОБВЯЗКА И ГИДРАВЛИКА");
+
+            // ==========================================
+            // РАЗДЕЛ 3: Радиаторы
+            // ==========================================
+            if(hasRad && radSecs>0) {
+                let cnt = this.state.win; 
+                let sec = Math.ceil(radSecs/cnt);
+                if(sec<4) sec=4; // Минимум 4 секции
+                
+                let r = catalog.rads.find(x=>x.sec===sec) || catalog.rads[10];
+                let heatLoad = Math.round((hasTp&&tpArea>0)?pwr*700:pwr*1000);
+                addToBill(r, cnt, `Нагрузка: ${heatLoad} Вт. ${cnt} окон. По ${sec} секций на окно`);
+                
+                addToBill(catalog.rad_kits[0], cnt, "Термоголовка для регулировки t°"); 
+                addToBill(catalog.rad_kits[1], cnt, "Узел нижнего подключения (бинокль)"); 
+                addToBill(catalog.rad_kits[2], cnt*2, "Ниппели для подключения узла");
+                
+                let c = Math.ceil((cnt*(Math.sqrt(this.state.area/(this.state.floors===2?2:1))+3)*1.1)/100);
+                let pipeInfo = `Лучевая разводка. ${cnt} радиаторов × ср.длину трассы`;
+                if(c>0) { 
+                    addToBill(catalog.insulated_pipes[0], c, pipeInfo + " (Подача)"); 
+                    addToBill(catalog.insulated_pipes[1], c, pipeInfo + " (Обратка)"); 
+                }
+                
+                let reqLoops = (this.state.floors===2 ? Math.ceil(cnt/2) : cnt);
+                let m = catalog.manifolds_rad.find(x=>x.loops===reqLoops);
+                if(!m) m = catalog.manifolds_rad[catalog.manifolds_rad.length-1];
+                
+                if(m) addToBill(m, this.state.floors===2?2:1, this.state.floors===2 ? "Коллектор на 1 и 2 этаж" : "Коллектор для лучевой разводки");
+                addToBill(catalog.parts[1], cnt*2, "Евроконуса для подключения труб к коллектору"); 
+                addToBill(catalog.parts[2], cnt*2, "Фиксаторы поворота трубы у пола");
+            }
+            flushBill("3. РАДИАТОРЫ ОТОПЛЕНИЯ");
+
+            // ==========================================
+            // РАЗДЕЛ 4: Теплый пол
+            // ==========================================
+            if(hasTp && tpMeters>0) {
+                let q5 = Math.floor(tpMeters/500);
+                let q1 = Math.ceil((tpMeters%500)/100);
+                let pipeTip = `Площадь ${tpArea}м² × 7 м.пог/м² = ${tpMeters} м`;
+                if(q5) addToBill(catalog.pipes[1], q5, pipeTip + " (Бухты по 500м)"); 
+                if(q1) addToBill(catalog.pipes[0], q1, pipeTip + " (Бухты по 100м)");
+                
+                let loops = 0, mans = 0;
+                
+                const proc = (a, lbl) => {
+                    if(a<=0) return;
+                    let l = Math.ceil((a*7)/85); // 85м макс длина петли
+                    if(l===1) l=2; // Минимум 2 контура для баланса
+                    loops+=l;
+                    
+                    let n = Math.ceil(l/12); // Макс 12 выходов в коллекторе
+                    let b = Math.floor(l/n); 
+                    let rem = l%n;
+                    
+                    for(let i=0; i<n; i++) {
+                        let sz = b + (i<rem?1:0);
+                        let m = catalog.manifolds.find(x=>x.loops===sz);
+                        if(m) {
+                            addToBill({...m, name:`Коллектор ТП ${sz} вых (${lbl})`}, 1, `${l} контуров на этаж. Разбито на коллекторы`); 
+                            mans++;
+                            if(useEco) { 
+                                addToBill(catalog.mixing_units[0],1, "НСУ локальный (без гидрострелки)"); 
+                                addToBill(catalog.pumps[2],1, "Насос для НСУ"); 
+                            }
+                        }
+                    }
+                };
+                proc(this.state.tp1, "1 этаж"); 
+                proc(this.state.tp2, "2 этаж");
+                
+                addToBill(catalog.parts[0], mans*2, "Концевые фитинги коллекторов"); 
+                addToBill(catalog.parts[1], loops*2, `2 евроконуса на каждый из ${loops} контуров`); 
+                addToBill(catalog.parts[2], loops*2, "Фиксаторы поворота трубы к коллектору");
+                
+                let mt = catalog.mats[0];
+                let mc = Math.ceil((tpArea/mt.area)*1.05); // +5% на обрезки
+                addToBill(mt, mc, `Площадь ${tpArea}м² / 0.88м² (лист) + 5% запас`);
+                
+                let warn = null;
+                if(!hasRad && tpArea>0) {
+                    let f = (pwr*1000)/tpArea;
+                    if(f>75) warn = `⚠️ НЕДОГРЕВ! Потребность дома: <b>${Math.round(f)} Вт/м²</b>. Макс. съем с пола (СНиП): <b>70 Вт/м²</b>. Дефицит: <b>${Math.round(f-70)} Вт/м²</b>. Добавьте радиаторы!`;
+                }
+                flushBill("4. ВОДЯНОЙ ТЕПЛЫЙ ПОЛ", warn);
+            }
+
+            // ==========================================
+            // РАЗДЕЛ 5: Теплоноситель
+            // ==========================================
+            let cl = catalog.coolants.find(c=>c.type===this.state.coolant);
+            if(cl) {
+                if(cl.type==='pro65') {
+                    // Смесь концентрата
+                    let vP=vSys*0.65;
+                    let vH=vSys*0.35;
+                    let p1=catalog.coolants[2]; // Pro 65
+                    let p2=catalog.coolants[0]; // Water
+                    addToBill(p1, Math.ceil(vP/p1.vol), `Система ${Math.round(vSys)}л × 65% концентрата`); 
+                    addToBill(p2, Math.ceil(vH/p2.vol), `Система ${Math.round(vSys)}л × 35% воды`);
+                } else {
+                    addToBill(cl, Math.ceil(vSys/cl.vol), `Объем системы ${Math.round(vSys)}л / ${cl.vol}л`);
+                }
+            }
+            flushBill("5. ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ");
+
+            // Финал
+            document.getElementById('tbody').innerHTML = h;
+            document.getElementById('total_sum').innerText = sum.toLocaleString() + " ₽";
+            
+            let d = showSku?'table-cell':'none';
+            document.querySelectorAll('.col-sku').forEach(e=>e.style.display=d);
+            document.querySelector('.col-sku-head').style.display=d;
+        }
+    };
+    window.onload = function() { app.init(); };
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="panel input-panel">
+        <h2>Калькулятор STOUT</h2>
+        <div class="control-item">
+            <div class="label-row"><span class="lbl">Площадь</span><span class="val"><span id="val_area">150</span> м²</span></div>
+            <input type="range" id="inp_area" min="50" max="300" step="10" value="150" oninput="app.setArea(this.value)">
+        </div>
+        <div class="grid-2">
+            <div class="control-card">
+                <span class="lbl">Окна</span>
+                <div class="stepper">
+                    <button class="step-btn" onclick="app.updWin(-1)">−</button>
+                    <div class="step-val" id="val_win">4</div>
+                    <button class="step-btn" onclick="app.updWin(1)">+</button>
+                </div>
+            </div>
+            <div class="control-card">
+                <span class="lbl">Второй этаж</span>
+                <label class="switch"><input type="checkbox" id="chk_floors" onchange="app.toggleFloors(this.checked)"><span class="slider"></span></label>
+            </div>
+        </div>
+        <h3>Параметры дома</h3>
+        <div class="control-item">
+            <span class="lbl-sub">Регион строительства</span>
+            <div class="tabs" id="reg_tabs">
+                <div class="tab active" onclick="app.setRegion(130)">Сибирь</div>
+                <div class="tab" onclick="app.setRegion(120)">Урал</div>
+                <div class="tab" onclick="app.setRegion(100)">Центр</div>
+                <div class="tab" onclick="app.setRegion(60)">Юг</div>
+            </div>
+            <div class="info-card" id="desc_reg"><span>📍</span> Зима до -35°C</div>
+        </div>
+        <div class="control-item">
+            <span class="lbl-sub">Материал стен</span>
+            <div class="tabs" id="mat_tabs">
+                <div class="tab" onclick="app.setMat(1.3)">Холодный</div>
+                <div class="tab active" onclick="app.setMat(1.0)">Стандарт</div>
+                <div class="tab" onclick="app.setMat(0.8)">Тёплый</div>
+            </div>
+            <div class="info-card" id="desc_mat"><span>🧱</span> Кирпич + Утеплитель</div>
+        </div>
+        <h3>Система</h3>
+        <div class="control-item">
+            <div class="tabs">
+                <div class="tab multi-active" id="fuel_el" onclick="app.toggleFuel('el')">Электро</div>
+                <div class="tab" id="fuel_gas" onclick="app.toggleFuel('gas')">Газ</div>
+            </div>
+        </div>
+        <div class="control-item">
+            <div class="label-row"><span class="lbl">Горячая вода (Бойлер)</span><label class="switch"><input type="checkbox" id="chk_hw" onchange="app.toggleHW(this.checked)"><span class="slider"></span></label></div>
+            <div id="blk_res" style="display:none; margin-top:10px; align-items:center; justify-content:space-between; background:#F8FAFC; padding:8px; border-radius:8px;">
+                <span class="lbl" style="margin:0">Жильцов:</span>
+                <div class="stepper" style="width:100px;"><button class="step-btn" onclick="app.updRes(-1)">−</button><div class="step-val" id="val_res">3</div><button class="step-btn" onclick="app.updRes(1)">+</button></div>
+            </div>
+        </div>
+        <div class="control-item">
+            <div class="tabs">
+                <div class="tab multi-active" id="sys_rad" onclick="app.toggleSys('rad')">Радиаторы</div>
+                <div class="tab" id="sys_tp" onclick="app.toggleSys('tp')">Тёплый пол</div>
+            </div>
+        </div>
+        <div id="blk_tp_sliders" style="display:none; border-top:1px dashed #E5E7EB; padding-top:15px;">
+            <div class="control-item"><div class="label-row"><span class="lbl">ТП 1 этаж</span><span class="val"><span id="val_tp1">0</span> м²</span></div><input type="range" id="inp_tp1" min="0" max="150" value="0" oninput="app.updTp(1,this.value)"></div>
+            <div id="div_tp2" class="control-item" style="display:none;"><div class="label-row"><span class="lbl">ТП 2 этаж</span><span class="val"><span id="val_tp2">0</span> м²</span></div><input type="range" id="inp_tp2" min="0" max="150" value="0" oninput="app.updTp(2,this.value)"></div>
+        </div>
+        <h3>Теплоноситель</h3>
+        <div class="control-item">
+            <div class="tabs">
+                <div class="tab cool-tab active" data-type="water" onclick="app.setCoolant('water')">💧 Вода</div>
+                <div class="tab cool-tab" data-type="eco30" onclick="app.setCoolant('eco30')">❄️ -30°C</div>
+                <div class="tab cool-tab" data-type="pro65" onclick="app.setCoolant('pro65')">❄️ -40°C</div>
+            </div>
+        </div>
+    </div>
+    <div class="panel output-panel" id="print-area">
+        <div class="doc-header">
+            <div class="header-row">
+                <div class="doc-title">Спецификация</div>
+                <div class="sku-control"><span class="sku-label">Артикулы</span><label class="switch"><input type="checkbox" id="chk_sku" onchange="app.toggleSku()"><span class="slider"></span></label></div>
+            </div>
+            <div class="doc-summary" id="doc_summary">...</div>
+        </div>
+        <table class="inv-table">
+            <thead><tr><th class="col-idx">#</th><th class="col-img">Фото</th><th>Наименование</th><th class="col-sku col-sku-head hidden-col">Артикул</th><th class="col-brand">Бренд</th><th class="col-unit">Ед.</th><th class="col-qty">Кол.</th><th style="text-align:right">Цена</th><th style="text-align:right">Сумма</th></tr></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+        <div class="doc-footer"><div class="total-lbl">Итого к оплате:</div><div class="total-val" id="total_sum">0 ₽</div></div>
+        <button class="btn-print" onclick="app.download()">Получить спецификацию (PDF)</button>
+    </div>
+</div>
+</body>
+</html>
